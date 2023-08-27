@@ -1,34 +1,48 @@
 import * as React from 'react';
-import {  Button, StyleSheet, Text, View,ImageBackground } from 'react-native';
+import { Button, StyleSheet, Text, View, ImageBackground } from 'react-native';
 import { TinderCard } from 'rn-tinder-card';
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 
 export default function App() {
-  const [data,setData] = React.useState( [
-    {src:'https://images.unsplash.com/photo-1681896616404-6568bf13b022?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1335&q=80',key:1}
-    ,
-    {
-      src:'https://images.unsplash.com/photo-1681871197336-0250ed2fe23d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1287&q=80',
-      key:2
-    },
-    {
-      src:'https://images.unsplash.com/photo-1681871197336-0250ed2fe23d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1287&q=80',
-      key:3
-    },
-  ])
 
-  const loadData = (index) => {
-    console.log(index)
-    if(index == 1) {
-      console.log("loading data")
-      setData([
-      {src:'https://images.unsplash.com/photo-1681238091934-10fbb34b497a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1282&q=80',key:3},
-      ])
-    }
+  const [data, setData] = React.useState([])
+
+ 
+  const getPaintingsFromApi = async (page = 1, limit = 3, collection_name = "") => {
+    response = await fetch(`https://artmuse-617f4c1e3849.herokuapp.com/api/paintings_app/?limit=${limit}&page=${page}`, {
+      method: 'GET',
+      timeout: 30,
+    })
+    response = await response.json()
+    res = response["paintings"]
+    paintings = []
+    res.forEach(p => {
+      const painting = {
+        id: p["id"],
+        resourceLink: p["resourceLink"],
+        objectBeginDate: p["objectBeginDate"],
+        objectEndDate: p["objectEndDate"],
+        artistDisplayName: p["artistDisplayName"],
+        title: p["title"],
+        imageLink: p["imageLink"],
+        collection: collection_name,
+      }
+      paintings.push(painting)
+    });
+    console.log(paintings)
+    return paintings
+
   }
+
+  React.useEffect(() => {
+    getPaintingsFromApi().then(res => setData(paintings))
+  }, [])
+
+
+
   return (
     <View style={{ flexDirection: "column", display: "flex", flex: 1, backgroundColor: "#14110f" }} >
-      <Text style={{color:"white",flex:1,backgroundColor:"#1A120B",textAlign:"center",paddingTop:20,fontSize:25}} >ArtMuse</Text>
+      <Text style={{ color: "white", flex: 1, backgroundColor: "#1A120B", textAlign: "center", paddingTop: 20, fontSize: 25 }} >ArtMuse</Text>
       <GestureHandlerRootView style={styles.wrapper} >
         {data.map((item, index) => {
           console.log(item)
@@ -36,23 +50,25 @@ export default function App() {
             <View
               style={styles.cardContainer}
               pointerEvents="box-none"
-              key={item["key"]}
+              key={item["id"]}
             >
               <TinderCard
                 cardWidth={338}
                 cardHeight={600}
                 cardStyle={styles.card}
                 onSwipedRight={() => {
-                  loadData(item["key"])
+                  return
                 }}
                 onSwipedLeft={() => {
-                  loadData(item["key"])
+                  return
                 }}
-                
+
               >
-                <ImageBackground source={{ uri: item["src"] }} style={styles.image} >
-                  <View style={{ position: 'absolute',height:"100%",width:"100%",  justifyContent:'flex-end', alignItems: 'center',paddingBottom:20, backgroundColor: 'rgba(0,0,0, 0.40)' }}>
-                    <Text>Title goes here</Text>
+                <ImageBackground source={{ uri: item["imageLink"] }} style={styles.image} >
+                  <View style={{ position: 'absolute', height: "100%", width: "100%", justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 20, backgroundColor: 'rgba(0,0,0, 0.40)' }}>
+                    <Text>{item["title"]}</Text>
+                    <Text>{item["artistDisplayName"]}</Text>
+
                   </View>
                 </ImageBackground>
               </TinderCard>
