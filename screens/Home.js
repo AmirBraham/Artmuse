@@ -17,7 +17,6 @@ const Home = () => {
 
     const onTouchStart = (e) => {
         setTouchEnd(null) // otherwise the swipe is fired even with usual touch events
-        console.log("skip")
 
         setTouchStart(e.nativeEvent.pageX)
 
@@ -45,6 +44,7 @@ const Home = () => {
                 flashListRef.current.scrollToIndex({
                     index: next_index,
                     animated: true,
+                    viewOffset: 60
                 });
             }
             return next_index;
@@ -61,48 +61,46 @@ const Home = () => {
         }
     };
 
-
-
     return (
-
-        <View style={{ flexDirection: "column", display: "flex", flex: 1, backgroundColor: "#14110f" }} >
-            <Text style={{ color: "white", flex: 1, backgroundColor: "#1A120B", textAlign: "center", paddingTop: 20, fontSize: 25 }} >ArtMuse</Text>
-
+        <>
             {isLoading ? <Text>Loading...</Text> : (isError ? <Text>An error occurred while fetching data</Text> :
+                <View style={{ flexDirection: "column", display: "flex", flex: 1, backgroundColor: "#14110f" }} >
+                    <Text style={{ color: "white", flex: 1, backgroundColor: "#1A120B", textAlign: "center", paddingTop: 20, fontSize: 25 }} >ArtMuse</Text>
+                    <SafeAreaView style={styles.wrapper}>
+                        <FlashList
+                            decelerationRate={0.5}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={(item) => item.id}
+                            data={data.pages.flatMap((page) => page.data)}
+                            estimatedItemSize={270}
+                            onEndReachedThreshold={0.1}
+                            scrollEnabled={false}
+                            ref={flashListRef}
+                            onTouchStart={onTouchStart}
+                            onTouchMove={onTouchMove}
+                            onTouchEnd={onTouchEnd}
+                            renderItem={({ item, index }) => {
 
+                                return <PaintingCard isActive={currentIndex == index} painting={item}></PaintingCard>
+                            }
+                            }
+                            onEndReached={loadNextPageData}
 
-                <SafeAreaView style={styles.wrapper}>
-                    <FlashList
-                        decelerationRate={0.95}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        keyExtractor={(item) => item.id}
-                        data={data.pages.flatMap((page) => page.data)}
-                        estimatedItemSize={270}
-                        onEndReachedThreshold={0.3}
-                        scrollEnabled={false}
-                        ref={flashListRef}
-                        onTouchStart={onTouchStart}
-                        onTouchMove={onTouchMove}
-                        onTouchEnd={onTouchEnd}
-                        renderItem={({item,index}) => {
-                            
-                            return <PaintingCard isActive={currentIndex == index} painting={item}></PaintingCard>
-                        }
-                        }
-                        onEndReached={loadNextPageData}
+                        />
+                    </SafeAreaView>
+                    <View style={{ display: 'flex', flex: 1, flexDirection: "row", justifyContent: "center", padding: 10 }}>
+                        <Button title='Set as Wallpaper' />
+                        <Button title='Add to favorites' />
+                    </View>
 
-                    />
-                </SafeAreaView>
+                </View>
+
             )}
 
 
-            <View style={{ display: 'flex', flex: 1, flexDirection: "row", justifyContent: "center", padding: 10 }}>
-                <Button styl title='Set as Wallpaper' />
-                <Button title='Add to favorites' />
-            </View>
 
-        </View>
+        </>
     )
 
 }
@@ -111,7 +109,6 @@ const Home = () => {
 const styles = StyleSheet.create({
     wrapper: {
         flex: 12,
-
     },
     cardContainer: {
         ...StyleSheet.absoluteFillObject,
