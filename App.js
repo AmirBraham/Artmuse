@@ -5,12 +5,14 @@ import {
 } from '@tanstack/react-query';
 
 import Home from "./screens/Home"
+import { StatusBar } from 'expo-status-bar';
 
 
 const queryClient = new QueryClient()
 
 
 export default function App() {
+  <StatusBar style="dark" />
 
   return (
     <QueryClientProvider client={queryClient}>
