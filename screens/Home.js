@@ -1,57 +1,77 @@
 import * as React from 'react';
-import { FlashList } from "@shopify/flash-list";
-import PaintingCard from '../components/PaintingCard';
 import useFetchPaintings from '../hooks/useFetchPaintings';
-import { Button, StyleSheet, Text, View, ImageBackground, SafeAreaView, Touchable } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { StyleSheet, Text, View, ActivityIndicator} from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import ManageWallpaper, { TYPE } from 'react-native-manage-wallpaper';
+import { MMKVLoader, useMMKVStorage } from 'react-native-mmkv-storage';
+import { TinderCard } from 'rn-tinder-card';
+import { Image } from '@rneui/themed';
+
+
+
+const storage = new MMKVLoader().initialize();
+
+
 const Home = () => {
 
-    const flashListRef = React.useRef(null);
-    const [currentIndex, setCurrentIndex] = React.useState(0);
     const { data, isLoading, isError, hasNextPage, fetchNextPage } = useFetchPaintings();
+    const [currentIndex, setCurrentIndex] = useMMKVStorage('current_index', storage, 0);
     const [touchStart, setTouchStart] = React.useState(null)
     const [touchEnd, setTouchEnd] = React.useState(null)
+    const [currentPainting, setCurrentPainting] = useMMKVStorage('current_painting', storage, null);
+    const [page, setPage] = useMMKVStorage('current_page', storage, 0);
+    const OverlayRight = () => {
+        return (
+            <View
+                style={[
+                    styles.overlayLabelContainer,
+                    {
+                        backgroundColor: 'green',
+                    },
+                ]}
+            >
+                <Text style={styles.overlayLabelText}>Like</Text>
+            </View>
+        );
+    };
+    const OverlayLeft = () => {
+        return (
+            <View
+                style={[
+                    styles.overlayLabelContainer,
+                    {
+                        backgroundColor: 'red',
+                    },
+                ]}
+            >
+                <Text style={styles.overlayLabelText}>Nope</Text>
+            </View>
+        );
+    };
+    const OverlayTop = () => {
+        return (
+            <View
+                style={[
+                    styles.overlayLabelContainer,
+                    {
+                        backgroundColor: 'blue',
+                    },
+                ]}
+            >
+                <Text style={styles.overlayLabelText}>Super Like</Text>
+            </View>
+        );
+    };
+    React.useEffect(() => {
 
-    // the required distance between touchStart and touchEnd to be detected as a swipe
-    const minSwipeDistance = 30
+        updateCurrentPainting(currentIndex)
+    }, [currentIndex])
 
-    const onTouchStart = (e) => {
-        setTouchEnd(null) // otherwise the swipe is fired even with usual touch events
-
-        setTouchStart(e.nativeEvent.pageX)
-
-    }
-
-    const onTouchMove = (e) => setTouchEnd(e.nativeEvent.pageX)
-
-    const onTouchEnd = () => {
-        if (!touchStart || !touchEnd) return
-        const distance = touchStart - touchEnd
-        const isLeftSwipe = distance > minSwipeDistance
-        const isRightSwipe = distance < -minSwipeDistance
-
-        console.log(isLeftSwipe ? "left" : null)
-        console.log(isRightSwipe ? "right" : null)
-
-        setCurrentIndex((index) => {
-            let next_index = index
-            if (isLeftSwipe) {
-                next_index += 1
-            } else if (isRightSwipe && index > 0) {
-                next_index -= 1
-            }
-            if (flashListRef.current) {
-                flashListRef.current.scrollToIndex({
-                    index: next_index,
-                    animated: true,
-                    viewOffset: 60
-                });
-            }
-            return next_index;
-        });
-
-
-        // add your conditional logic here
+    const updateCurrentPainting = (index = 0) => {
+        if (data) {
+            const paintings = data.pages.flatMap((page) => page.data)
+            setCurrentPainting(paintings[index])
+        }
     }
 
 
@@ -61,55 +81,102 @@ const Home = () => {
         }
     };
 
+    const callback = res => {
+        console.log(res)
+    };
+
+    const setWallpaper = () => {
+
+
+        ManageWallpaper.setWallpaper(
+            {
+                uri: currentPainting["imageLink"],
+            },
+            callback,
+            TYPE.BOTH,
+        );
+
+
+    };
+
+    const fetchMore = (id) => {
+        let isLastItem = false
+
+        let data_flatten = data.pages.flatMap((page) => page.data)
+        console.log( data_flatten.findIndex(item => item["id"] == id))
+        isLastItem = data_flatten.findIndex(item => item["id"] == id) %10 == 0
+        if(isLastItem) {
+            loadNextPageData()
+        }
+
+    }
+    if (isLoading) return <Text>Loading...</Text>
+    if (isError) return <Text>An error occurred while fetching data</Text>
+    console.log(data.pages[data.pages.length - 1]["data"])
     return (
-        <>
-            {isLoading ? <Text>Loading...</Text> : (isError ? <Text>An error occurred while fetching data</Text> :
-                <View style={{ flexDirection: "column", display: "flex", flex: 1, backgroundColor: "#14110f" }} >
-                    <Text style={{ color: "white", flex: 1, backgroundColor: "#1A120B", textAlign: "center", paddingTop: 20, fontSize: 25 }} >ArtMuse</Text>
-                    <SafeAreaView style={styles.wrapper}>
-                        <FlashList
-                            decelerationRate={0.5}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            keyExtractor={(item) => item.id}
-                            data={data.pages.flatMap((page) => page.data)}
-                            estimatedItemSize={270}
-                            onEndReachedThreshold={0.1}
-                            scrollEnabled={false}
-                            ref={flashListRef}
-                            onTouchStart={onTouchStart}
-                            onTouchMove={onTouchMove}
-                            onTouchEnd={onTouchEnd}
-                            renderItem={({ item, index }) => {
-
-                                return <PaintingCard isActive={currentIndex == index} painting={item}></PaintingCard>
-                            }
-                            }
-                            onEndReached={loadNextPageData}
-
-                        />
-                    </SafeAreaView>
-                    <View style={{ display: 'flex', flex: 1, flexDirection: "row", justifyContent: "center", padding: 10 }}>
-                        <Button title='Set as Wallpaper' />
-                        <Button title='Add to favorites' />
-                    </View>
-
-                </View>
-
-            )}
-
-
-
-        </>
+        <GestureHandlerRootView style={styles.wrapper}>
+                    {data.pages[data.pages.length - 1]["data"].map((item) => {
+                        return (
+                            <View
+                                style={styles.cardContainer}
+                                pointerEvents="box-none"
+                                key={item["id"]}
+                            >
+                                <TinderCard
+                                    cardWidth={380}
+                                    cardHeight={730}
+                                    OverlayLabelRight={OverlayRight}
+                                    OverlayLabelLeft={OverlayLeft}
+                                    OverlayLabelTop={OverlayTop}
+                                    cardStyle={styles.card}
+                                    onSwipedRight={() => {
+                                        fetchMore(item["id"])
+                                    }}
+                                    onSwipedTop={() => {
+                                        return
+                                    }}
+                                    onSwipedLeft={() => {
+                                        return
+                                    }}
+                                >
+                                    <Image source={{ uri: item["imageLink"] }} style={styles.image} PlaceholderContent={<ActivityIndicator />} />
+                                </TinderCard>
+                            </View>
+                        );
+                    })}
+        </GestureHandlerRootView>
     )
 
 }
 
 
+
 const styles = StyleSheet.create({
     wrapper: {
-        flex: 12,
+        flex: 1,
     },
+
+    cardContainer: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    card: {
+        borderRadius: 48,
+    },
+    image: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 48,
+    },
+    overlayLabelContainer: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    overlayLabelText: { color: 'white', fontSize: 32, fontWeight: 'bold' },
     cardContainer: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
@@ -136,3 +203,10 @@ const styles = StyleSheet.create({
 
 
 export default Home
+
+/*
+
+   <View style={{ flexDirection: "column", display: "flex", flex: 1, backgroundColor: "#14110f" }} >
+                <Text style={{ color: "white", flex: 1, backgroundColor: "#1A120B", textAlign: "center", paddingTop: 20, fontSize: 25 }} >ArtMuse</Text>
+
+*/
