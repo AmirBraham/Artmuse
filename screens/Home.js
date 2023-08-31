@@ -1,15 +1,18 @@
 import * as React from 'react';
 import useFetchPaintings from '../hooks/useFetchPaintings';
-import { StyleSheet, Text, View, ImageBackground, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import ManageWallpaper, { TYPE } from 'react-native-manage-wallpaper';
 import { MMKVLoader, useMMKVStorage } from 'react-native-mmkv-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import TinderCard from 'react-tinder-card'
 import { Button } from '@rneui/base';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FastImage from 'react-native-fast-image'
+import { ColorSpace } from 'react-native-reanimated';
 
 const storage = new MMKVLoader().initialize();
 
-const Home = () => {
+const Home = ({navigation}) => {
 
     const [page, setPage] = useMMKVStorage('page', storage, 1);
 
@@ -32,16 +35,16 @@ const Home = () => {
 
     }
     React.useEffect(() => {
-        console.log("current painting : ")
-        console.log(currentPainting)
     }, [currentPainting])
 
     React.useEffect(() => {
-        if (data) {
+        if ( data) {
+            
             let newFetchedPaintings = data.pages[data.pages.length - 1]["data"]
-
+            let uniquePaintings = [...paintings,...newFetchedPaintings].filter((value, index, array) => array.indexOf(value) === index)
             setPaintings((oldPaintings) => {
-                let uniquePaintings = [...newFetchedPaintings, ...oldPaintings].filter((value, index, array) => array.indexOf(value) === index) // making sure key is unique
+                 // making sure key is unique
+
                 let newPaintings = uniquePaintings.filter(painting => alreadyViewedPaintings.indexOf(painting["id"]) === -1)
                 return [...newPaintings]
 
@@ -86,11 +89,23 @@ const Home = () => {
 
     };
 
+    const setPriority = (index) => {
+        const l = paintings.length
+        if(index / l > 0.75) {
+            return FastImage.priority.high
+        }else if(index / l > 0.4) {
+            return FastImage.priority.normal
+        }
+        return FastImage.priority.low
+    }
+
 
     if (isLoading) return <Text>Loading...</Text>
     if (isError) return <Text>An error occurred while fetching data</Text>
     return (
         <View style={styles.container}>
+           
+
             {
             isLoadingWallpaper && <View style={{
                 width:"100%",
@@ -106,19 +121,35 @@ const Home = () => {
             </View>
 
                 }
-            <Text style={styles.header} >ArtMuse</Text>
+            <View style={styles.header} >
+            <Text style={styles.logo} >ArtMuse</Text>
+            <View >
+            <FontAwesome.Button  name="cog" backgroundColor="transparent"  onPress={() => navigation.navigate("Settings")} />
+
+            </View>
+     
+            
+            </View>
+
+
             {
                 paintings.length != 0 ? (<View style={styles.cardContainer}>
-                    {paintings.map(painting => {
+                    {paintings.map((painting,index) => {
                         return (
                             <TinderCard
                                 key={painting["id"]}
                                 onSwipe={(dir) => swiped(dir, painting["title"])}
                                 onCardLeftScreen={() => outOfFrame(painting["id"])}>
                                 <View style={styles.card}>
-                                    <ImageBackground
-                                        source={{ uri: painting["imageLink"] }}
+                                    <FastImage
+                                        source={{ uri: painting["imageLink"],priority: setPriority(index) }}
                                         defaultSource={require('../img/placeholder.png')}
+
+                                        onLoadEnd={() => {
+                                            console.log("ended loading  :" , painting["title"] )
+                                            console.log("priority : ",setPriority(index))
+
+                                        }}
                                         imageStyle={styles.image}
                                         style={styles.cardImage}>
                                         <LinearGradient
@@ -129,7 +160,7 @@ const Home = () => {
 
                                         </LinearGradient>
 
-                                    </ImageBackground>
+                                    </FastImage>
 
                                 </View>
 
@@ -162,12 +193,26 @@ const styles = StyleSheet.create({
         backgroundColor: "#14110f"
     },
     header: {
-        color: "white",
         backgroundColor: "#1A120B",
+        flex: 1,
+        paddingTop:20,
+        flexDirection: 'row',
+        alignItems:'center',
+        justifyContent:'space-between',
+    },
+    logo:{
+        color: "white",
         textAlign: "center",
-        paddingTop: 20,
-        fontSize: 25,
-        paddingBottom: 30
+        paddingLeft:20,
+        fontSize:30,
+        width:"100%",
+        flexBasis:1,
+        flex:1,
+
+    },
+    settingsButton:{
+        flex:1,
+        backgroundColor:"transparent"
     },
     cardContainer: {
         width: '100%',

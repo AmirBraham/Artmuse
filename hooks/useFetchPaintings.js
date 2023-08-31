@@ -2,7 +2,6 @@ import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 
 export default function useFetchPaintings(page) {
     const getPaintings = async ({ pageParam = page,limit=10 }) => {
-        console.log(pageParam)
         const res = await (
             await fetch(
                 `https://artmuse-617f4c1e3849.herokuapp.com/api/paintings_app/?limit=${limit}&page=${pageParam}`
