@@ -218,7 +218,7 @@ const Home = ({ navigation }) => {
             <View style={styles.actions}>
                 <Icon.Button name='wallpaper' onPress={setWallpaper} style={styles.wallpaperButton} backgroundColor='rgba(0, 0, 0, 0.09)' size={48} borderRadius={32} title={"Set as wallpaper"} />
                 <Icon.Button color={isPaintingInFavorites() ? "red" : "white"} name={isPaintingInFavorites() ? 'favorite' : 'favorite-outline'} size={48} onPress={isPaintingInFavorites() ? removeFromFavorites : addToFavorites} style={styles.wallpaperButton} backgroundColor='rgba(0, 0, 0, 0.09)'  borderRadius={32} title={"Set as wallpaper"} />
-                <Icon.Button name='read-more' onPress={setWallpaper} style={styles.wallpaperButton} backgroundColor='rgba(0, 0, 0, 0.09)' size={48} borderRadius={32} title={"Set as wallpaper"} />
+                <Icon.Button name='read-more' onPress={()=>navigation.navigate("Painting",{painting:currentPainting})} style={styles.wallpaperButton} backgroundColor='rgba(0, 0, 0, 0.09)' size={48} borderRadius={32} title={"Set as wallpaper"} />
 
             </View>
 

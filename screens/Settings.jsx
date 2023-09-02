@@ -1,12 +1,11 @@
 import { Button, Image } from '@rneui/base';
 import * as React from 'react';
 import {
-    StyleSheet, View, SafeAreaView, FlatList, Text, ImageBackground
+    StyleSheet, View, SafeAreaView, FlatList, Text, ImageBackground, TouchableOpacity
 } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
 import { MMKVLoader, useMMKVStorage } from 'react-native-mmkv-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { ScrollPicker } from 'react-native-value-picker';
 
 const storage = new MMKVLoader().initialize();
 
@@ -33,15 +32,8 @@ const Settings = ({ navigation }) => {
                 <Text style={styles.logo} >Settings</Text>
             </View>
             <View style={styles.settings}>
-                <View style={{display:"flex",flexDirection:"column",height:"100%",flex:2,justifyContent:"space-evenly"}}>
-                    <Text style={{
-                        color: "white",
-                        textAlignVertical: "center",
-                        width: "100%",
-                        textAlign: "center",
-                        
-                        fontSize: 19
-                    }}>Pick only from Favorites</Text>
+                <View style={{ display: "flex", flexDirection: "column", height: "100%", flex: 2, justifyContent: "space-evenly" }}>
+
                     <Text style={{
                         color: "white",
                         textAlignVertical: "center",
@@ -49,51 +41,80 @@ const Settings = ({ navigation }) => {
                         textAlign: "center",
                         fontSize: 19
                     }}>Change Wallpaper Every </Text>
+                    <Text style={{
+                        color: "white",
+                        textAlignVertical: "center",
+                        width: "100%",
+                        textAlign: "center",
+
+                        fontSize: 19
+                    }}>Pick only from Favorites</Text>
                 </View>
+
                 <View style={{
                     display: "flex",
                     flexDirection: 'column',
-                    height:"100%",
-                    
-                    justifyContent:"space-evenly",
-                    alignItems:"center"
+                    height: "100%",
+
+                    justifyContent: "space-evenly",
+                    alignItems: "center"
                 }}>
+                   
+                    <Button buttonStyle={{ width: 80 }} color="rgba(50,50,50,0.1)" title={textArray[currentIndex]} onPress={nextText} />
                     <View>
                         <BouncyCheckbox
-                            size={32}
-                            fillColor="red"
-                            unfillColor="#FFFFFF"
+                            size={36}
+                            fillColor="rgba(22,20,18)"
+                            unfillColor="rgba(100,100,100,0.6)"
                             disableText
                             iconStyle={{ borderColor: "red" }}
                             innerIconStyle={{ borderWidth: 0 }}
                             onPress={(isChecked) => { }}
                         />
                     </View>
-                    <Button buttonStyle={{ width: 80 }} color="rgba(50,50,50,0.1)" title={textArray[currentIndex]} onPress={nextText} />
-
                 </View>
-
-
-
-
             </View>
+
             <View style={styles.paintingsListContainer}>
 
-                <Text style={styles.favoriteWallpapersText}>Favorite Wallpapers</Text>
+                <Text style={styles.favoriteWallpapersText}>Favorite Wallpapers {favoritePaintings.length == 0 ? "will appear here" : null}</Text>
                 {
-                    [favoritePaintings].length > 0 ? <FlatList
+                    favoritePaintings.length > 0 ? <FlatList
                         data={favoritePaintings}
                         renderItem={({ index, item: painting }) =>
+                        <TouchableOpacity onPress={() =>{
+                            navigation.navigate("Painting",{
+                                painting
+                            })
+                        }}>
+
                             <ImageBackground resizeMode='cover' source={{ uri: painting["imageLink"] }} style={styles.paintingContainer}>
                                 <Text style={styles.title}>{painting["title"]}</Text>
 
-                            </ImageBackground>}
+                            </ImageBackground>
+                        </TouchableOpacity>
+                            }
                         keyExtractor={item => item.id}
                     /> : null
                 }
             </View>
             <View style={styles.credits}>
-                <Text style={styles.aboutText}> - About ArtMuse - </Text>
+                <Text style={styles.aboutText}> - About ArtMuse -  </Text>
+
+                <TouchableOpacity onPress={() => {
+                    storage.clearStore()
+                    storage.clearMemoryCache()
+                }} >
+
+                    <Text style={{
+                        textAlign: "center",
+                        textAlignVertical: "center",
+                        fontSize: 18,
+                        fontFamily: "Jost",
+                        width: "100%",
+                        color: "white"
+                    }}>Clear Cache</Text>
+                </TouchableOpacity>
             </View>
 
         </SafeAreaView>
@@ -133,9 +154,9 @@ const styles = StyleSheet.create({
     },
     settings: {
         flex: 2,
-        flexDirection:"row",
+        flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal:10
+        paddingHorizontal: 10
     },
 
     paintingContainer: {
@@ -169,6 +190,7 @@ const styles = StyleSheet.create({
 
     credits: {
         flex: 1,
+        paddingBottom: 10
     },
     aboutText: {
         flex: 1,

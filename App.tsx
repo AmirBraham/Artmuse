@@ -18,7 +18,7 @@ import {
 } from '@tanstack/react-query';
 import Home from "./screens/Home"
 import Settings from './screens/Settings';
-
+import Painting from './screens/Painting';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient()
@@ -33,11 +33,11 @@ function App(): JSX.Element {
       <QueryClientProvider client={queryClient}>
         <Stack.Navigator screenOptions={{
           headerShown: false,
+          presentation: "card",
         }} >
-
           <Stack.Screen name='Hello' component={Home} />
           <Stack.Screen name='Settings' component={Settings} />
-
+          <Stack.Screen name='Painting' component={Painting} />
         </Stack.Navigator>
       </QueryClientProvider>
 
