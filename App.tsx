@@ -35,9 +35,14 @@ function App(): JSX.Element {
           headerShown: false,
           presentation: "card",
         }} >
-          <Stack.Screen name='Hello' component={Home} />
           <Stack.Screen name='Settings' component={Settings} />
+
+          <Stack.Screen name='Hello' component={Home} />
+
+
+
           <Stack.Screen name='Painting' component={Painting} />
+
         </Stack.Navigator>
       </QueryClientProvider>
 

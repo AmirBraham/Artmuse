@@ -107,7 +107,6 @@ const Home = ({ navigation }) => {
         }
         return FastImage.priority.low
     }
-    console.log(favoritePaintings)
     React.useEffect(() => {
         let cards = []
         if (paintings.length != 0) {

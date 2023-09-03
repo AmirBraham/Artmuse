@@ -6,20 +6,53 @@ import {
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
 import { MMKVLoader, useMMKVStorage } from 'react-native-mmkv-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import ManageWallpaper, { TYPE } from 'react-native-manage-wallpaper';
+import notifee from '@notifee/react-native';
+import BackgroundFetch from "react-native-background-fetch";
+
+
 
 const storage = new MMKVLoader().initialize();
-
-
-const textArray = ['Never', "15 mins", '30 mins', '1 hour', '3 hours', "1 day"]; // Replace with your text array
+const textArray = ['Never', "15 mins", '30 mins', '1 hour', '3 hours', "1 day"];
 
 const Settings = ({ navigation }) => {
     const [favoritePaintings, setfavoritePaintings] = useMMKVStorage("favorite_paintings", storage, [])
     const [currentIndex, setCurrentIndex] = React.useState(0);
 
-    const nextText = () => {
-        // Calculate the next index and wrap around if needed
-        const nextIndex = (currentIndex + 1) % textArray.length;
-        setCurrentIndex(nextIndex);
+    const nextText = async () => {
+        await notifee.requestPermission()
+        const channelId = await notifee.createChannel({
+            id: 'default',
+            name: 'Default Channel',
+        });
+        await notifee.displayNotification({
+            title: 'ArtMuse will automatically change wallpaper every 15 minutes',
+            body: 'Thanks for supporting me ',
+            android: {
+                channelId
+            },
+        });
+        BackgroundFetch.configure(
+            {
+                minimumFetchInterval: 15,
+                 // minimum interval in minutes
+                enableHeadless:true, // start when the device boots up
+                stopOnTerminate: false, // continue running after the app is terminated
+                startOnBoot: true,
+                requiredNetworkType:BackgroundFetch.NETWORK_TYPE_ANY,
+                periodic:true
+            },
+            async (taskId) => {
+                // Perform your background task here
+                console.log(`Background task with ID ${taskId} executed`);
+                BackgroundFetch.finish(taskId); // signal task completion
+            }, async (taskId) => {  // <-- Task timeout callback
+                // This task has exceeded its allowed running-time.
+                // You must stop what you're doing and immediately .finish(taskId)
+                BackgroundFetch.finish(taskId);
+            }
+        );
+
     };
 
 
@@ -59,7 +92,7 @@ const Settings = ({ navigation }) => {
                     justifyContent: "space-evenly",
                     alignItems: "center"
                 }}>
-                   
+
                     <Button buttonStyle={{ width: 80 }} color="rgba(50,50,50,0.1)" title={textArray[currentIndex]} onPress={nextText} />
                     <View>
                         <BouncyCheckbox
@@ -67,6 +100,7 @@ const Settings = ({ navigation }) => {
                             fillColor="rgba(22,20,18)"
                             unfillColor="rgba(100,100,100,0.6)"
                             disableText
+                            isChecked={true}
                             iconStyle={{ borderColor: "red" }}
                             innerIconStyle={{ borderWidth: 0 }}
                             onPress={(isChecked) => { }}
@@ -82,18 +116,18 @@ const Settings = ({ navigation }) => {
                     favoritePaintings.length > 0 ? <FlatList
                         data={favoritePaintings}
                         renderItem={({ index, item: painting }) =>
-                        <TouchableOpacity onPress={() =>{
-                            navigation.navigate("Painting",{
-                                painting
-                            })
-                        }}>
+                            <TouchableOpacity onPress={() => {
+                                navigation.navigate("Painting", {
+                                    painting
+                                })
+                            }}>
 
-                            <ImageBackground resizeMode='cover' source={{ uri: painting["imageLink"] }} style={styles.paintingContainer}>
-                                <Text style={styles.title}>{painting["title"]}</Text>
+                                <ImageBackground resizeMode='cover' source={{ uri: painting["imageLink"] }} style={styles.paintingContainer}>
+                                    <Text style={styles.title}>{painting["title"]}</Text>
 
-                            </ImageBackground>
-                        </TouchableOpacity>
-                            }
+                                </ImageBackground>
+                            </TouchableOpacity>
+                        }
                         keyExtractor={item => item.id}
                     /> : null
                 }

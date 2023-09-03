@@ -9,48 +9,64 @@ import LinearGradient from 'react-native-linear-gradient';
 const storage = new MMKVLoader().initialize();
 
 const Painting = ({ navigation, route }) => {
-    const { painting } = route.params
-    if (painting == null) {
-        navigation.goBack("Home")
-    }
+    const [painting, setPainting] = React.useState(null);
+    React.useEffect(() => {
+        if (route.params) {
+            const { painting } = route.params
+            if (painting == null) {
+                navigation.goBack("Home")
+            } else {
+                setPainting(prevPainting => painting)
+            }
+        } else {
+            const painting =
+                setPainting(prevPainting => JSON.parse(storage.getString("current_painting")))
+        }
+    }, [])
+
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.goBackButton}>
                 <Icon.Button style={{ paddingEnd: 0 }} backgroundColor='rgba(0, 0, 0, 0)' name='arrow-back' size={32} onPress={() => { navigation.goBack() }} />
             </View>
             <View style={{
-                backgroundColor:"black",
-                height:"100%"
+                backgroundColor: "black",
+                height: "100%"
             }}>
 
+                {
+                    painting ? <>
+                        <ImageBackground source={{ uri: painting["imageLink"] }} style={styles.paintingContainer}>
 
-            <ImageBackground source={{ uri: painting["imageLink"] }} style={styles.paintingContainer}>
+                            <LinearGradient
+                                // Button Linear Gradient
+                                colors={['rgba(28,20,56,0.2)', 'rgba(0,0,0,0.8)', 'rgba(0,0,0,1)']}
+                                style={{ width: "100%", height: "100%", paddingBottom: 40, justifyContent: 'flex-end' }}>
+                                <Text style={styles.title}>{painting["title"]}</Text>
+                                <Text style={styles.title}>{painting["artistDisplayName"]}</Text>
+                                <Text style={styles.title}>{painting["collection"]}</Text>
+                                <Text style={styles.title}>{painting["objectBeginDate"]} -{painting["objectEndDate"]} </Text>
+                            </LinearGradient>
 
-                <LinearGradient
-                    // Button Linear Gradient
-                    colors={['rgba(28,20,56,0.2)', 'rgba(0,0,0,0.8)', 'rgba(0,0,0,1)']}
-                    style={{ width: "100%", height: "100%", paddingBottom: 40, justifyContent: 'flex-end' }}>
-                    <Text style={styles.title}>{painting["title"]}</Text>
-                    <Text style={styles.title}>{painting["artistDisplayName"]}</Text>
-                    <Text style={styles.title}>{painting["collection"]}</Text>
-                    <Text style={styles.title}>{painting["objectBeginDate"]} -{painting["objectEndDate"]} </Text>
-                </LinearGradient>
-
-            </ImageBackground>
-            <Text style={{...styles.title,paddingBottom:5}}>Painting Description</Text>
-            <ScrollView>
+                        </ImageBackground>
+                        <Text style={{ ...styles.title, paddingBottom: 5 }}>Painting Description</Text>
+                        <ScrollView>
 
 
-            <Text style={{
-                    color:"white",
-                    fontSize:18,
-                    paddingHorizontal:5,
-                    textAlign:"justify",
-                    fontFamily:"Jost",
-            }}>
-                {painting["description"]}
-                   </Text>
-            </ScrollView>
+                            <Text style={{
+                                color: "white",
+                                fontSize: 18,
+                                paddingHorizontal: 5,
+                                textAlign: "justify",
+                                fontFamily: "Jost",
+                            }}>
+                                {painting["description"]}
+                            </Text>
+                        </ScrollView>
+                    </> : null
+                }
+
 
             </View>
 
