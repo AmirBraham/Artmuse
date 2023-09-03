@@ -11,47 +11,74 @@ import notifee from '@notifee/react-native';
 import BackgroundFetch from "react-native-background-fetch";
 
 
-
 const storage = new MMKVLoader().initialize();
-const textArray = ['Never', "15 mins", '30 mins', '1 hour', '3 hours', "1 day"];
+const textArray = ['Never', "15 mins"];
 
 const Settings = ({ navigation }) => {
     const [favoritePaintings, setfavoritePaintings] = useMMKVStorage("favorite_paintings", storage, [])
     const [currentIndex, setCurrentIndex] = React.useState(0);
+    const [runningInBackground, setRunningInBackground] = useMMKVStorage("running_background", storage, false)
 
     const nextText = async () => {
-        await notifee.requestPermission()
         const channelId = await notifee.createChannel({
-            id: 'default',
-            name: 'Default Channel',
+            id: 'artmuse',
+            name: 'Artmuse Channel',
         });
-        await notifee.displayNotification({
-            title: 'ArtMuse will automatically change wallpaper every 15 minutes',
-            body: 'Thanks for supporting me ',
-            android: {
-                channelId
-            },
-        });
-        BackgroundFetch.configure(
-            {
-                minimumFetchInterval: 15,
-                 // minimum interval in minutes
-                enableHeadless:true, // start when the device boots up
-                stopOnTerminate: false, // continue running after the app is terminated
-                startOnBoot: true,
-                requiredNetworkType:BackgroundFetch.NETWORK_TYPE_ANY,
-                periodic:true
-            },
-            async (taskId) => {
-                // Perform your background task here
-                console.log(`Background task with ID ${taskId} executed`);
-                BackgroundFetch.finish(taskId); // signal task completion
-            }, async (taskId) => {  // <-- Task timeout callback
-                // This task has exceeded its allowed running-time.
-                // You must stop what you're doing and immediately .finish(taskId)
-                BackgroundFetch.finish(taskId);
+        await notifee.requestPermission()
+        if(!runningInBackground) {
+            await notifee.displayNotification({
+                title: 'Wallpaper will change every 15 minutes',
+                body: 'Thanks for supporting me rania ❤️  ',
+                android: {
+                    channelId
+                },
+            });
+        }else{
+            await notifee.cancelDisplayedNotifications()
+        }
+
+        const nextIndex = (currentIndex + 1) % textArray.length;
+        setCurrentIndex(nextIndex);
+        setRunningInBackground(prevRunningInBackground => {
+            if (!prevRunningInBackground) {
+                
+                BackgroundFetch.configure(
+                    {
+                        minimumFetchInterval: 15,
+                        // minimum interval in minutes
+                        enableHeadless: true, // start when the device boots up
+                        stopOnTerminate: false, // continue running after the app is terminated
+                        startOnBoot: true,
+                        requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY,
+                        periodic: true
+                    },
+                    async (taskId) => {
+                        if (favoritePaintings.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * favoritePaintings.length)
+                            const painting = favoritePaintings[randomIndex]
+                            ManageWallpaper.setWallpaper(
+                                {
+                                    uri: painting["imageLink"],
+                                },
+                                (res) => { console.log(res) },
+                                TYPE.BOTH,
+                            );
+                        }
+
+                        BackgroundFetch.finish(taskId); // signal task completion
+                    }, async (taskId) => {  // <-- Task timeout callback
+                        // This task has exceeded its allowed running-time.
+                        // You must stop what you're doing and immediately .finish(taskId)
+                        BackgroundFetch.finish(taskId);
+                    }
+                );
+            } else {
+                BackgroundFetch.stop()
             }
-        );
+            return !prevRunningInBackground
+        })
+
+
 
     };
 
@@ -101,6 +128,7 @@ const Settings = ({ navigation }) => {
                             unfillColor="rgba(100,100,100,0.6)"
                             disableText
                             isChecked={true}
+                            disabled
                             iconStyle={{ borderColor: "red" }}
                             innerIconStyle={{ borderWidth: 0 }}
                             onPress={(isChecked) => { }}
