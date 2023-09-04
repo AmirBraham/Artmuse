@@ -28,7 +28,7 @@ const Settings = ({ navigation }) => {
         if(!runningInBackground) {
             await notifee.displayNotification({
                 title: 'Wallpaper will change every 15 minutes',
-                body: 'Thanks for supporting me rania ❤️  ',
+                body: '',
                 android: {
                     channelId
                 },
