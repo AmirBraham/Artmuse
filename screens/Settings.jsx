@@ -1,7 +1,7 @@
 import { Button, Image } from '@rneui/base';
 import * as React from 'react';
 import {
-    StyleSheet, View, SafeAreaView, FlatList, Text, ImageBackground, TouchableOpacity
+    StyleSheet, View, SafeAreaView, FlatList, Text, ImageBackground, TouchableOpacity , Animated
 } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
 import { MMKVLoader, useMMKVStorage } from 'react-native-mmkv-storage';
@@ -9,6 +9,10 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import ManageWallpaper, { TYPE } from 'react-native-manage-wallpaper';
 import notifee from '@notifee/react-native';
 import BackgroundFetch from "react-native-background-fetch";
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { RectButton } from 'react-native-gesture-handler';
+
 
 
 const storage = new MMKVLoader().initialize();
@@ -25,7 +29,7 @@ const Settings = ({ navigation }) => {
             name: 'Artmuse Channel',
         });
         await notifee.requestPermission()
-        if(!runningInBackground) {
+        if (runningInBackground) {
             await notifee.displayNotification({
                 title: 'Wallpaper will change every 15 minutes',
                 body: '',
@@ -33,7 +37,7 @@ const Settings = ({ navigation }) => {
                     channelId
                 },
             });
-        }else{
+        } else {
             await notifee.cancelDisplayedNotifications()
         }
 
@@ -41,7 +45,7 @@ const Settings = ({ navigation }) => {
         setCurrentIndex(nextIndex);
         setRunningInBackground(prevRunningInBackground => {
             if (!prevRunningInBackground) {
-                
+
                 BackgroundFetch.configure(
                     {
                         minimumFetchInterval: 15,
@@ -75,6 +79,7 @@ const Settings = ({ navigation }) => {
             } else {
                 BackgroundFetch.stop()
             }
+            console.log(!prevRunningInBackground)
             return !prevRunningInBackground
         })
 
@@ -82,9 +87,78 @@ const Settings = ({ navigation }) => {
 
     };
 
+    renderLeftActions = (progress, dragX) => {
+        const trans = dragX.interpolate({
+            inputRange: [0, 50, 100, 101],
+            outputRange: [-20, 0, 0, 1],
+        });
+        return (
+            <RectButton style={styles.leftAction} onPress={close}>
+                <Animated.Text
+                    style={[
+                        styles.actionText,
+                        {
+                            transform: [{ translateX: trans }],
+                        },
+                    ]}>
+                    Remove
+                </Animated.Text>
+            </RectButton>
+        );
+    };
 
+    const swipeableRow = React.useRef()
+
+    const updateRef = (ref) => {
+        swipeableRow.current = ref
+    }
+
+    const close = () => {
+        swipeableRow?.current?.close()
+    }
+
+    const renderRightAction = (
+        text,
+        color,
+        x,
+        progress
+    ) => {
+        const trans = progress.interpolate({
+            inputRange: [0,0.5, 1],
+            outputRange: [x/2,5, 0],
+        });
+        const pressHandler = () => {
+            close();
+            // eslint-disable-next-line no-alert
+            window.alert(text);
+        };
+
+        return (
+            <Animated.View style={{ flex: 1, transform: [{ translateX: trans }] }}>
+                <RectButton
+                    style={[styles.rightAction, { backgroundColor: color }]}
+                    onPress={pressHandler}>
+                    <Text style={styles.actionText}>{text}</Text>
+                </RectButton>
+            </Animated.View>
+        );
+    };
+    /*
+    const renderRightActions = (
+        progress,
+        _dragAnimatedValue
+    ) => (
+        <View
+            style={{
+                width: 124,
+                flexDirection: 'row',
+            }}>
+            {renderRightAction('More', 'transparent', 32, progress)}
+        </View>
+    );
+    */
     return (
-        <SafeAreaView style={styles.container}>
+        <GestureHandlerRootView style={styles.container}>
             <View style={styles.goBackButton}>
                 <Icon.Button style={{ paddingEnd: 0 }} backgroundColor='rgba(0, 0, 0, 0)' name='arrow-back' size={32} onPress={() => { navigation.goBack() }} />
             </View>
@@ -144,17 +218,47 @@ const Settings = ({ navigation }) => {
                     favoritePaintings.length > 0 ? <FlatList
                         data={favoritePaintings}
                         renderItem={({ index, item: painting }) =>
-                            <TouchableOpacity onPress={() => {
-                                navigation.navigate("Painting", {
-                                    painting
-                                })
-                            }}>
+                        <View style={{marginVertical:8}}>
+                            <Swipeable
+                                ref={updateRef}
+                                friction={2}
+                                enableTrackpadTwoFingerGesture
+                                leftThreshold={30}
+                                rightThreshold={40}
+                                renderLeftActions={renderLeftActions}
+                                onSwipeableOpen={(direction) => {
+                                    console.log(`Opening swipeable from the ${direction}`);
+                                    if(direction == "left") {
+                                        console.log(`Removing painting from favorites : ${painting["title"]}`)
+                                        setTimeout(() => {
+                                            setfavoritePaintings(prevFavoritePaintings=>prevFavoritePaintings.filter(item=>item["id"] != painting["id"]))
 
-                                <ImageBackground resizeMode='cover' source={{ uri: painting["imageLink"] }} style={styles.paintingContainer}>
-                                    <Text style={styles.title}>{painting["title"]}</Text>
+                                        },1000)
 
-                                </ImageBackground>
-                            </TouchableOpacity>
+                                    }
+                                }}
+                                onSwipeableClose={(direction) => {
+                                    console.log(`Closing swipeable to the ${direction}`);
+                                }}>
+                                    <View>
+
+
+                                <TouchableOpacity activeOpacity={0.9} onPress={() => {
+                                    navigation.navigate("Painting", {
+                                        painting
+                                    }) 
+                                }}>
+
+                                    <ImageBackground resizeMode='cover' source={{ uri: painting["imageLink"] }} style={styles.paintingContainer}>
+                                        <Text style={styles.title}>{painting["title"]}</Text>
+
+                                    </ImageBackground>
+                                </TouchableOpacity>
+                                </View>
+
+                            </Swipeable>
+                            </View>
+
                         }
                         keyExtractor={item => item.id}
                     /> : null
@@ -179,7 +283,7 @@ const Settings = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-        </SafeAreaView>
+        </GestureHandlerRootView>
 
 
 
@@ -224,7 +328,6 @@ const styles = StyleSheet.create({
     paintingContainer: {
         display: "flex",
         height: 100,
-        marginVertical: 8,
         width: "100%",
         flexDirection: "row",
         alignContent: "center"
@@ -263,6 +366,22 @@ const styles = StyleSheet.create({
         fontFamily: "Jost",
         width: "100%",
         color: "white"
+    },
+    leftAction: {
+        flex: 1,
+        justifyContent: 'center',
+        backgroundColor:"red"
+    },
+    actionText: {
+        color: 'white',
+        fontSize: 16,
+        backgroundColor: 'transparent',
+        padding: 10,
+    },
+    rightAction: {
+        alignItems: 'center',
+        flex: 1,
+        justifyContent: 'center',
     }
 
 

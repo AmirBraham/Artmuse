@@ -24,7 +24,6 @@ const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient()
 
 function App(): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
 
   return (
 
@@ -35,10 +34,11 @@ function App(): JSX.Element {
           headerShown: false,
           presentation: "card",
         }} >
-
           <Stack.Screen name='Hello' component={Home} />
 
           <Stack.Screen name='Settings' component={Settings} />
+
+
 
 
           <Stack.Screen name='Painting' component={Painting} />
